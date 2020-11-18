@@ -1,0 +1,59 @@
+{
+	"name": "PSE",
+	"version": "2.0.0",
+	"license": "UNLICENSED",
+	"description": "Bänäs periodic table",
+	"author": "baenae.de",
+	"main": "main.js",
+	"private": true,
+	"scripts": {
+		"dev": "cross-env NODE_ENV=development webpack-dev-server --progress",
+		"build": "cross-env NODE_ENV=production webpack"
+	},
+	"dependencies": {
+		"pixi.js": "^5.3.3"
+	},
+	"devDependencies": {
+		"@babel/core": "^7.9.0",
+		"@babel/node": "^7.8.7",
+		"@babel/plugin-proposal-class-properties": "^7.8.3",
+		"@babel/plugin-proposal-decorators": "^7.8.3",
+		"@babel/plugin-proposal-json-strings": "^7.8.3",
+		"@babel/plugin-syntax-dynamic-import": "^7.8.3",
+		"@babel/plugin-syntax-import-meta": "^7.8.3",
+		"@babel/plugin-transform-classes": "^7.10.4",
+		"@babel/polyfill": "^7.8.7",
+		"@babel/preset-env": "^7.9.5",
+		"babel-eslint": "^10.1.0",
+		"babel-loader": "^8.1.0",
+		"babel-plugin-transform-class-properties": "^6.24.1",
+		"babel-plugin-transform-es2015-modules-umd": "^6.24.1",
+		"clean-webpack-plugin": "^3.0.0",
+		"compression-webpack-plugin": "^3.1.0",
+		"copy-webpack-plugin": "^5.1.1",
+		"cross-env": "^7.0.2",
+		"eslint": "^7.8.1",
+		"fibers": "^5.0.0",
+		"file-loader": "^6.0.0",
+		"friendly-errors-webpack-plugin": "^1.7.0",
+		"html-webpack-plugin": "^3.2.0",
+		"uglifyjs-webpack-plugin": "^1.2.0",
+		"url-loader": "^4.1.0",
+		"webpack": "^4.43.0",
+		"webpack-auto-inject-version": "^1.2.2",
+		"webpack-bundle-analyzer": "^3.7.0",
+		"webpack-cli": "^3.3.11",
+		"webpack-dev-server": "^3.10.3",
+		"webpack-hot-middleware": "^2.25.0",
+		"webpack-merge": "^4.2.2"
+	},
+	"engines": {
+		"node": ">= 6.0.0",
+		"npm": ">= 3.0.0"
+	},
+	"browserslist": [
+		"> 1%",
+		"last 2 versions",
+		"not ie <= 8"
+	]
+}
