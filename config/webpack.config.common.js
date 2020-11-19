@@ -15,7 +15,7 @@ const path = require('path');
 
 // je nachdem in welchem env wir uns befinden ist der Pfad zu den assets anders.
 // wird im DefinePlugin geprüft, das liefert den passenden String zurück
-const ADSPACEPLAYER_ASSETS_PATH_SUFFIX = {
+const ASSETS_PATH_PREFIX = {
 	development: JSON.stringify('../static/'),
 	production: JSON.stringify("./static/")
 };
@@ -76,15 +76,18 @@ const webpackConfig = {
 		]
 	},
 	plugins: [
-		new CleanWebpackPlugin(),
+		//new CleanWebpackPlugin(),
 		new HtmlPlugin({ template: 'index.html', chunksSortMode: 'dependency', inject: 'head' }),
 		new CopyPlugin([
 			{ from: 'static/img', to: 'static/img', ignore: ['.gitkeep'] }
-		])
-	],
+		]),
+		new webpack.DefinePlugin({
+			'ASSETS_PATH_PREFIX': ASSETS_PATH_PREFIX[environment]
+		}),
+	]/*,
 	optimization: {
 		minimize: true
-	}
+	}*/
 };
 
 module.exports = webpackConfig;
