@@ -1,16 +1,19 @@
 import * as PIXI from 'pixi.js'
+import { Container } from '@pixi/display';
+import { DisplayElement } from '@/DisplayElement';
 
 export class Controller {
 	constructor() {
 		this.app = null;
 		this.pseData = '';
-		this.chemElementMCList = new Array();
+
+		this.chemElementPane = null;
+		this.chemElementList = new Array();
 		this.loadPSEData();
 	}
 
 	/**
-	 * Callbackfunktion, wenn die Sprachen geladen wurden
-	 * @param Labels
+	 * Load the Elements-JSON File
 	 */
 	loadPSEData() {
 		let request = new XMLHttpRequest();
@@ -34,6 +37,9 @@ export class Controller {
 		request.send();
 	}
 
+	/**
+	 * Baut das Pixi auf
+	 */
 	buildPixi() {
 		let type = "WebGL"
 		if (!PIXI.utils.isWebGLSupported()) {
@@ -41,7 +47,7 @@ export class Controller {
 		}
 
 		PIXI.utils.sayHello(type);
-		console.log("this " + this);
+
 		//Create a Pixi Application
 		this.app = new PIXI.Application({
 			autoResize: true,
@@ -56,25 +62,41 @@ export class Controller {
 		this.app.renderer.autoResize = true;
 		this.app.renderer.resize(window.innerWidth, window.innerHeight);
 
+		//Auf Rezise reagieren
 		window.addEventListener('resize', () => {
 			this.app.renderer.resize(window.innerWidth, window.innerHeight);
+
+			this.chemElementPane.scale.x = 1;
+			this.chemElementPane.scale.y = 1;
+
+			let scale = Math.min (1, (window.innerWidth / (this.chemElementPane.width + 100)), (window.innerHeight / (this.chemElementPane.height + 100)));
+
+			this.chemElementPane.scale.x = scale;
+			this.chemElementPane.scale.y = scale;
+
+			this.chemElementPane.x = (window.innerWidth / 2) - (this.chemElementPane.width / 2);
+			this.chemElementPane.y = (window.innerHeight / 2) - (this.chemElementPane.height / 2);
 		});
 
+		this.loadFonts();
+	}
+
+	loadFonts() {
 		let self = this;
 
-// // Load them google fonts before starting...!
+		// Load them google fonts before starting...!
 		window.WebFontConfig = {
 			google: {
 				families: ['Open Sans'],
 			},
 
 			active() {
-				self.go2();
+				self.loadFontsSuccess();
 			},
 		};
 
 		/* eslint-disable */
-// include the web-font loader script
+		// include the web-font loader script
 		(function () {
 			const wf = document.createElement('script');
 			wf.src = `${ document.location.protocol === 'https:' ? 'https' : 'http'
@@ -87,11 +109,11 @@ export class Controller {
 		/* eslint-enabled */
 	}
 
-	go2 () {
-
+	loadFontsSuccess () {
 		this.createBackground();
 		this.createSymbols();
 	}
+
 
 	createBackground() {
 		this.app.loader
@@ -109,38 +131,17 @@ export class Controller {
 	}
 
 	createSymbols () {
-		for (var i = 0; i < this.pseData.wert1.length; i++)
-		{
-			var chemElem = this.pseData.wert1[i];
-console.log(chemElem);
-			//Positionierung der Elemente
-			var posX = (chemElem.gruppe - 1) * 100;
-			var posY = (chemElem.periode - 1) * 150;
+		this.chemElementPane = new Container();
 
-			const textSample = new PIXI.Text(chemElem.symbol, {
-				fontFamily: 'Open Sans',
-				fontWeight: 'Bold',
-				fontSize: 50,
-				fill: 'white',
-				align: 'left',
-			});
-			textSample.position.set(posX, posY);
+		for (let elementData of this.pseData.wert1) {
+			console.log(elementData);
+			let element = new DisplayElement(elementData)
 
-			this.app.stage.addChild(textSample);
-			/*
+			this.chemElementList.push(element);
 
-
-			var elementMC = new sprite(chemElem);
-			elementMC.setTransform(posX, posY);
-			this.app.addChild(elementMC.getMC());
-			this.chemElementMCList.push(elementMC)
-
-			 */
+			this.chemElementPane.addChild(element.mc);
 		}
-	}
-
-
-	createSymbol (element) {
-
+		this.app.stage.addChild(this.chemElementPane);
+		window.dispatchEvent(new Event('resize'));
 	}
 }

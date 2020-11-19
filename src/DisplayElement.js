@@ -1,68 +1,87 @@
-(function (window)
-{
-    function ElementMC(data)
-    {
-		//Allgemeiner Container
-        this.container = new createjs.Container();
-		
-		//Hintergrundbild
-        this.background = new createjs.Bitmap('images/element_bg.jpg');
-        this.container.addChild(this.background);
-		
-		this.drawSymbol(data.symbol);
-		
-		this.container.scaleX = this.container.scaleY = 4;
-    }
-    window.ElementMC = ElementMC;
-	
-	/**
-	 * Positionierung des Elementes ohne getMC aufrufen zu muessen
-	 * @param posX
-	 * @praram posY
-	 */
-	ElementMC.prototype.setTransform = function (posX, posY) 
-	{
-		this.container.setTransform(posX, posY, 0.3, 0.3);
+import * as PIXI from 'pixi.js'
+import { Container } from '@pixi/display';
+
+export class DisplayElement {
+	static get WIDTH() { return 240; };
+	static get HEIGHT() { return 320; };
+
+	constructor(data) {
+		this.elementData = data;
+		this._mc = new Container();
+
+		this._orgPosX = 0;
+		this._orgPosY = 0;
+
+		this.init();
 	}
-	
-	/**
-	 * Gibt eine Referenz auf den Container wieder
-	 * @return Container
-	 */
-	ElementMC.prototype.getMC = function () 
-	{
-		return this.container;
+
+	init () {
+		const graphics = new PIXI.Graphics();
+		graphics.beginFill(0x327da4);
+		graphics.drawRect(0, 0, DisplayElement.WIDTH, DisplayElement.HEIGHT);
+		graphics.endFill();
+
+		graphics.beginFill(0xFFFFFF);
+		graphics.drawRect(0, 0, DisplayElement.WIDTH, 4);
+		graphics.drawRect(0, 0, 4, DisplayElement.HEIGHT);
+		graphics.drawRect(0, DisplayElement.HEIGHT - 4, DisplayElement.WIDTH, 4);
+		graphics.drawRect(DisplayElement.WIDTH - 4, 0, 4, DisplayElement.HEIGHT);
+		graphics.endFill();
+
+		this._mc.addChild(graphics);
+
+		const atomicNumber = new PIXI.Text(this.elementData.ordnungszahl, {
+			fontFamily: 'Open Sans',
+			fontWeight: '900',
+			fontSize: 28,
+			fill: 'white',
+			align: 'left',
+		});
+		atomicNumber.position.set(24, 20);
+		this._mc.addChild(atomicNumber);
+
+		const name = new PIXI.Text(this.elementData.name_deutsch, {
+			fontFamily: 'Open Sans',
+			fontWeight: '400',
+			fontSize: 28,
+			fill: 'white',
+			align: 'left'
+		});
+		name.anchor.set(0.5, 0.5);
+		name.position.set(120, 206);
+		this._mc.addChild(name);
+
+		const symbol = new PIXI.Text(this.elementData.symbol, {
+			fontFamily: 'Open Sans',
+			fontWeight: '900',
+			fontSize: 90,
+			fill: 'white',
+			align: 'center'
+		});
+		symbol.anchor.set(0.5, 0.5);
+		symbol.position.set(120, 130);
+		this._mc.addChild(symbol);
+
+		const atomicWeight = new PIXI.Text(this.elementData.masse, {
+			fontFamily: 'Open Sans',
+			fontWeight: '900',
+			fontSize: 28,
+			fill: 'white',
+			align: 'left',
+		});
+		atomicWeight.position.set(24, 264);
+
+		this._orgPosX = (this.elementData.gruppe - 1) * DisplayElement.WIDTH;
+		this._orgPosY = (this.elementData.periode - 1) * DisplayElement.HEIGHT;
+
+		this._mc.x = this._orgPosX;
+		this._mc.y = this._orgPosY;
+
+		this._mc.cacheAsBitmap = true;
+		this._mc.addChild(atomicWeight);
 	}
-	
-	/**
-	 * Malt das Chemische Symbol
-	 * @param symbol
-	 */
-	ElementMC.prototype.drawSymbol = function (symbol) 
-	{
-		var text = new createjs.Text(symbol, "bold 72px Arial", "#000000");
-		text.x = 20;
-		text.y = 30;
-		this.container.addChild(text);
+
+	get mc() {
+		return this._mc;
 	}
-	
-	/**
-	 * malt den schatten
-	 */
-	ElementMC.prototype.drawXXX = function (symbol) 
-	{
-		var color = new createjs.Shape();
-		color.graphics.f("yellow").dr(0, 0, ELEMENT_WIDTH, ELEMENT_HEIGHT);
-		this.container.addChild(color);
-	}
-		
-	/**
-	 * malt den schatten
-	 */
-	ElementMC.prototype.drawShadow = function (symbol) 
-	{
-		var dimout = new createjs.Shape();
-		dimout.graphics.f("black").dr(0, 0, ELEMENT_WIDTH, ELEMENT_HEIGHT);
-		this.container.addChild(dimout);
-	}
-}(window));
+}
