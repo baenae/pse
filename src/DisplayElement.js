@@ -4,23 +4,26 @@ import { Container } from '@pixi/display';
 export class DisplayElement {
 	static get WIDTH() { return 240; };
 	static get HEIGHT() { return 320; };
+	static get LIVE_COLOR() { return [0xd4edff, 0x85bed9 ,0x4f8aa6, 0x0f5173, 0x0a3659] }
 
 	constructor(data) {
 		this.elementData = data;
 		this._mc = new Container();
+		this.background = null;
 
 		this._orgPosX = 0;
 		this._orgPosY = 0;
+
+		// Count until Death
+		this.lives = 4;
 
 		this.init();
 	}
 
 	init () {
-		const graphics = new PIXI.Graphics();
-		graphics.beginFill(0x327da4);
-		graphics.drawRect(0, 0, DisplayElement.WIDTH, DisplayElement.HEIGHT);
-		graphics.endFill();
+		this.drawBackground();
 
+		const graphics = new PIXI.Graphics();
 		graphics.beginFill(0xFFFFFF);
 		graphics.drawRect(0, 0, DisplayElement.WIDTH, 4);
 		graphics.drawRect(0, 0, 4, DisplayElement.HEIGHT);
@@ -83,5 +86,31 @@ export class DisplayElement {
 
 	get mc() {
 		return this._mc;
+	}
+
+	hit () {
+		if (this.lives > 0) {
+			this._mc.cacheAsBitmap = false;
+			this.lives--;
+			this.drawBackground();
+
+			if (this.lives === 0) {
+				return true;
+			} else {
+				this._mc.cacheAsBitmap = true;
+			}
+		}
+		return false;
+	}
+
+	drawBackground () {
+		if (!this.background) {
+			this.background = new PIXI.Graphics();
+			this._mc.addChildAt(this.background, 0);
+		}
+		this.background.clear();
+		this.background.beginFill(DisplayElement.LIVE_COLOR[this.lives]);
+		this.background.drawRect(0, 0, DisplayElement.WIDTH, DisplayElement.HEIGHT);
+		this.background.endFill();
 	}
 }
