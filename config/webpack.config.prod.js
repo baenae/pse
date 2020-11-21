@@ -4,8 +4,6 @@ const webpack = require('webpack');
 const merge = require('webpack-merge');
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
-const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
-const MiniCSSExtractPlugin = require('mini-css-extract-plugin');
 
 const helpers = require('./helpers');
 const commonConfig = require('./webpack.config.common');
@@ -22,11 +20,6 @@ const webpackConfig = merge(commonConfig, {
 	optimization: {
 		runtimeChunk: 'single',
 		minimizer: [
-			new OptimizeCSSAssetsPlugin({
-				cssProcessorPluginOptions: {
-					preset: ['default', {discardComments: {removeAll: true}}],
-				}
-			}),
 			new UglifyJSPlugin({
 				cache: true,
 				parallel: true,
@@ -44,12 +37,6 @@ const webpackConfig = merge(commonConfig, {
 						const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
 						return `npm.${packageName.replace('@', '')}`;
 					}
-				},
-				styles: {
-					test: /\.css$/,
-					name: 'styles',
-					chunks: 'all',
-					enforce: true
 				}
 			}
 		}
@@ -57,10 +44,6 @@ const webpackConfig = merge(commonConfig, {
 	plugins: [
 		new webpack.EnvironmentPlugin(environment),
 		new webpack.HashedModuleIdsPlugin(),
-		new MiniCSSExtractPlugin({
-			filename: helpers.assetsPath('css/[name].bundle.css'),
-			chunkFilename: helpers.assetsPath('css/[id].bundle.css')
-		}),
 	]
 });
 
