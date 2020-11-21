@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js'
 import { Container } from '@pixi/display';
+import { TweenMax } from "gsap";
 
 export class DisplayElement {
 	static get WIDTH() { return 240; };
@@ -43,7 +44,7 @@ export class DisplayElement {
 		atomicNumber.position.set(24, 20);
 		this._mc.addChild(atomicNumber);
 
-		const name = new PIXI.Text(this.elementData.name_deutsch, {
+		const name = new PIXI.Text(this.elementData.name_englisch, {
 			fontFamily: 'Open Sans',
 			fontWeight: '400',
 			fontSize: 28,
@@ -77,11 +78,25 @@ export class DisplayElement {
 		this._orgPosX = (this.elementData.gruppe - 1) * DisplayElement.WIDTH;
 		this._orgPosY = (this.elementData.periode - 1) * DisplayElement.HEIGHT;
 
-		this._mc.x = this._orgPosX;
-		this._mc.y = this._orgPosY;
+		this._mc.alpha = 0;
+		this._mc.x = this._orgPosX - 30;
+		this._mc.y = this._orgPosY -30;
+		this._mc.width = DisplayElement.WIDTH * 1.2;
+		this._mc.height = DisplayElement.HEIGHT * 1.2;
 
 		this._mc.cacheAsBitmap = true;
 		this._mc.addChild(atomicWeight);
+	}
+
+	animateStart (delay) {
+		TweenMax.to(this._mc, 0.2, {
+			x: this._orgPosX,
+			y: this._orgPosY,
+			width: DisplayElement.WIDTH,
+			height: DisplayElement.HEIGHT,
+			alpha: 1,
+			delay: delay,
+		});
 	}
 
 	get mc() {
@@ -89,15 +104,16 @@ export class DisplayElement {
 	}
 
 	hit () {
-		if (this.lives > 0) {
+		if (this.lives >= 0) {
 			this._mc.cacheAsBitmap = false;
 			this.lives--;
 			this.drawBackground();
 
-			if (this.lives === 0) {
+			if (this.lives < 0) {
 				return true;
 			} else {
-				this._mc.cacheAsBitmap = true;
+				TweenMax.to(this._mc, 0.1, {x: "+=10", yoyo: true, repeat: 2});
+				TweenMax.to(this._mc, 0.1, {x: "-=10", y: "-=10", yoyo: true, repeat: 2});
 			}
 		}
 		return false;

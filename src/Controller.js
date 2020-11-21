@@ -3,13 +3,15 @@ import { Container } from '@pixi/display';
 import { DisplayElement } from '@/DisplayElement';
 import { Shooter } from '@/Shooter';
 import { TweenMax } from "gsap";
-import * as PixiPlugin from "gsap/PixiPlugin";
 
 export class Controller {
 	constructor() {
 		this.app = null;
 		this.pseData = '';
 
+		this.playing = false;
+
+		this._start = null;
 		this.shooter = null;
 		this.shooterStage = null;
 		this.shots = new Array();
@@ -17,6 +19,9 @@ export class Controller {
 		this.chemElementPane = null;
 		this.chemElementList = new Array();
 		this.loadPSEData();
+
+		this._blur = 5;
+		this.blurFilter = new PIXI.filters.BlurFilter();
 	}
 
 	/**
@@ -98,9 +103,10 @@ export class Controller {
 
 		this.app.loader
 			.add('spritesheet', ASSETS_PATH_PREFIX + 'img/' + 'mc.json')
-			.add(ASSETS_PATH_PREFIX + "img/trail.png").load()
+			.add(ASSETS_PATH_PREFIX + "img/trail.png")
+			.add(ASSETS_PATH_PREFIX + "img/start.png")
+			.add(ASSETS_PATH_PREFIX + "img/logo.png")
 			.load(() => {
-				console.log("go futher");
 				self.onAssetsLoaded();
 			});
 
@@ -133,63 +139,28 @@ export class Controller {
 						this.shots.splice(shotIndex, 1);
 						this.app.stage.removeChild(shot);
 
-
 						// Hit Element, death?
 						if (element.hit()) {
 							//Remove Element
-							this.explode (elementIndex);
-
-							// Damage the surrounding elements
+							this.chemElementList.splice(elementIndex, 1);
+							this.explode(element);
 						} else {
 							this.explodeAnimation(shot, true);
 						}
 					}
 				}
 			}
+
+			// Blur Animation
+			if (this.playing && this._blur > 0) {
+				this._blur -= 0.1;
+				this.blurFilter.blur = this._blur;
+			}
 		});
 	}
 
 	onAssetsLoaded() {
-		console.log("3");
 		this.loadFonts();
-	}
-
-	explode (elementIndex) {
-		const element = this.chemElementList[elementIndex];
-
-		// To intersect the other elements
-		element.mc.scale.set(element.mc.scale.x + 0.2);
-		element.mc.x -= 20;
-		element.mc.y -= 20;
-
-		this.chemElementList.splice(elementIndex, 1);
-
-		for (const surroundIndex in this.chemElementList) {
-			const surroundElement = this.chemElementList[surroundIndex];
-
-			// hit?
-			if (Controller.testForAABB(element.mc, surroundElement.mc)) {
-				if (surroundElement.hit()) {
-					//Remove Element
-					setTimeout(() => {
-						this.explode(surroundIndex)
-					}, 300);
-				}
-			}
-		}
-
-		this.explodeAnimation (element.mc);
-		this.chemElementPane.removeChild(element.mc);
-	}
-
-	static testForAABB(object1, object2) {
-		const bounds1 = object1.getBounds();
-		const bounds2 = object2.getBounds();
-
-		return bounds1.x < bounds2.x + bounds2.width
-			&& bounds1.x + bounds1.width > bounds2.x
-			&& bounds1.y < bounds2.y + bounds2.height
-			&& bounds1.y + bounds1.height > bounds2.y;
 	}
 
 	loadFonts() {
@@ -220,54 +191,9 @@ export class Controller {
 		/* eslint-enabled */
 	}
 
-	explodeAnimation(mc, small = false) {
-		// create an array to store the textures
-		const explosionTextures = [];
-		let i;
-
-		for (i = 0; i < 26; i++) {
-			const texture = PIXI.Texture.from(`Explosion_Sequence_A ${i + 1}.png`);
-			explosionTextures.push(texture);
-		}
-
-		// create an explosion AnimatedSprite
-		const explosion = new PIXI.AnimatedSprite(explosionTextures);
-		explosion.loop = false;
-
-
-
-		explosion.anchor.set(0.5);
-		explosion.rotation = Math.random() * Math.PI;
-
-		explosion.gotoAndPlay(0);
-
-
-		if (small) {
-			explosion.x = mc.x + this.chemElementPane.x;
-			explosion.y = mc.y + this.chemElementPane.y - 20;
-			explosion.scale.set(0.3);
-			this.app.stage.addChild(explosion);
-
-			explosion.onComplete = () => {
-				this.app.stage.removeChild(explosion);
-			};
-		} else {
-			explosion.x = mc.x + DisplayElement.WIDTH / 2;
-			explosion.y = mc.y + DisplayElement.HEIGHT / 2;
-			explosion.scale.set(3);
-			this.chemElementPane.addChild(explosion);
-
-			explosion.onComplete = () => {
-				this.chemElementPane.removeChild(explosion);
-			};
-		}
-
-	}
-
-
 	loadFontsSuccess () {
-		console.log("loadFontsSuccess");
 		//this.createBackground();
+		this.createStart();
 		this.createSymbols();
 		this.createShooter();
 
@@ -275,11 +201,11 @@ export class Controller {
 		window.dispatchEvent(new Event('resize'));
 	}
 
-
 	createShooter () {
 		let shooterContainer = new Shooter();
 		this.shooter = shooterContainer.shooter;
 		this.shooterStage = shooterContainer.mc
+		this.shooterStage.alpha = 0;
 
 		this.app.stage.addChild(this.shooterStage);
 
@@ -289,10 +215,16 @@ export class Controller {
 
 		const self = this;
 		function down(event) {
-			self.shooter.width = self.shooter.height = 50;
-			TweenMax.to(self.shooter, 0.3, { width: 100, height: 100 });
+			if (self.playing) {
+				self.shooter.width = self.shooter.height = 50;
+				TweenMax.to(self.shooter, 0.3, { width: 100, height: 100 });
 
-			self.createShot();
+				self.createShot();
+			} else {
+				self.playing = true;
+				TweenMax.to(self.shooterStage, 0.3, { alpha: 1 });
+				TweenMax.to(self._start, 0.3, { alpha: 0 });
+			}
 		}
 	}
 
@@ -314,14 +246,33 @@ export class Controller {
 	createSymbols () {
 		this.chemElementPane = new Container();
 
+		let delay = 3;
+
 		for (let elementData of this.pseData.wert1) {
-			//console.log(elementData);
-			let element = new DisplayElement(elementData)
-			this.chemElementList.push(element);
-			this.chemElementPane.addChild(element.mc);
+
+			if (elementData.gruppe !== 'La' && elementData.gruppe !== 'Ac') {
+				//console.log(elementData);
+				let element = new DisplayElement(elementData)
+				this.chemElementList.push(element);
+				this.chemElementPane.addChildAt(element.mc, 0);
+
+				element.animateStart(delay);
+				delay -= 0.013;
+			}
 		}
 
-		this.app.stage.addChild(this.chemElementPane);
+		//
+		const logo = new PIXI.Sprite(
+			this.app.loader.resources[ASSETS_PATH_PREFIX + "img/logo.png"].texture
+		);
+		logo.x = 600;
+		logo.alpha = 0;
+		logo.y = 500;
+		this.chemElementPane.addChild(logo);
+		TweenMax.to(logo, 0.3, { alpha: 1, delay: 3.3 });
+
+		this.chemElementPane.filters = [this.blurFilter];
+		this.app.stage.addChildAt(this.chemElementPane, 0);
 	}
 
 
@@ -337,5 +288,113 @@ export class Controller {
 		mc.y = this.shooter.y * this.shooterStage.scale.y + this.shooterStage.y - 50;
 
 		return mc;
+	}
+
+	createStart () {
+		this._start = new Container();
+
+		const bg = new PIXI.Graphics();
+		bg.beginFill(0x0a3659, 0.8);
+		bg.drawRect(0, 0, 920, 560);
+		bg.endFill();
+		this._start.addChild(bg);
+
+		const mc = new PIXI.Sprite(
+			this.app.loader.resources[ASSETS_PATH_PREFIX + "img/start.png"].texture
+		);
+
+		this._start.addChild(mc);
+		this._start.scale.set(0.7);
+
+		this._start.x = (window.innerWidth / 2 - this._start.width / 2)
+		this._start.y = (window.innerHeight / 2 - this._start.height / 2)
+
+		this.app.stage.addChild(this._start);
+	}
+
+
+	explode (element) {
+		// To intersect the other elements
+		element.mc.scale.set(element.mc.scale.x + 0.2);
+		element.mc.x -= 20;
+		element.mc.y -= 20;
+
+		// Hit all surrounding Elements
+		for (const surroundElement of this.chemElementList) {
+
+			// hit?
+			if (Controller.testForAABB(element.mc, surroundElement.mc)) {
+				setTimeout(() => {
+					if (surroundElement.hit()) {
+						//Remove Element
+						//const surroundIndex =
+						//this.chemElementList.splice(surroundIndex, 1);
+						function arrayRemove(arr, value) {
+
+							return arr.filter(function(ele){
+								return ele != value;
+							});
+						}
+
+						this.chemElementList = arrayRemove(this.chemElementList, surroundElement);
+
+						this.explode(surroundElement)
+					}
+				}, 250);
+			}
+		}
+
+		this.explodeAnimation(element.mc);
+		this.chemElementPane.removeChild(element.mc);
+	}
+
+	static testForAABB(object1, object2) {
+		const bounds1 = object1.getBounds();
+		const bounds2 = object2.getBounds();
+
+		return bounds1.x < bounds2.x + bounds2.width
+			&& bounds1.x + bounds1.width > bounds2.x
+			&& bounds1.y < bounds2.y + bounds2.height
+			&& bounds1.y + bounds1.height > bounds2.y;
+	}
+
+	explodeAnimation(mc, small = false) {
+		// create an array to store the textures
+		const explosionTextures = [];
+		let i;
+
+		for (i = 0; i < 26; i++) {
+			const texture = PIXI.Texture.from(`Explosion_Sequence_A ${i + 1}.png`);
+			explosionTextures.push(texture);
+		}
+
+		// create an explosion AnimatedSprite
+		const explosion = new PIXI.AnimatedSprite(explosionTextures);
+		explosion.loop = false;
+		explosion.anchor.set(0.5);
+		explosion.rotation = Math.random() * Math.PI;
+		explosion.gotoAndPlay(0);
+
+
+		if (small) {
+			explosion.x = mc.x; // + this.chemElementPane.x;
+			explosion.y = mc.y + this.chemElementPane.y - 20;
+			explosion.scale.set(0.3);
+			this.app.stage.addChild(explosion);
+
+			explosion.onComplete = () => {
+				this.app.stage.removeChild(explosion);
+			};
+		} else {
+			explosion.x = mc.x + DisplayElement.WIDTH / 2;
+			explosion.y = mc.y + DisplayElement.HEIGHT / 2;
+			explosion.scale.set(3);
+			this.chemElementPane.addChild(explosion);
+
+			explosion.onComplete = () => {
+				this.chemElementPane.removeChild(explosion);
+			};
+		}
+
 	}
 }
